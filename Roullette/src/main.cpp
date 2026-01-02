@@ -14,57 +14,57 @@
 
 //Local
 #include "LCDUtils.h"
-#include "LEDUtils.h"
 #include "GameMode.h"
 #include "GameLogic.h"
+#include "Relay.h"
 
 //Prototypes
 void clearTopRow();
 void clearBottomRow();
 void setTopText(const char*);
 void setBottomText(const char*);
-void setColor(int, int, int);
 
 const char* getCurrentGameModeText(GameMode);
 void incrementGameMode(GameMode &gameMode);
 
 //initialize the liquid crystal library
-const int navButtonPin = 2;
-const int selectButtonPin = 3;
+const int navButtonPin = 5;
+const int selectButtonPin = 6;
 
-const int relayPowerPin = 4;
-const int relaySwitchPin = 5;
+const int relayPowerPin = 10;
+const int relaySwitchPin = 8;
 
 
-//Init buttons
-int redPin= 6;
-int greenPin = 7;
-int bluePin = 8;
-LEDUtils ledUtils(redPin, greenPin, bluePin);
+
 
 bool isPlaying = 0;
 bool bottomTextChange = 0;
 bool topTextChange = 0;
 
 GameMode gameMode = GameMode::CLASSIC6;
-GameLogic gameLogic(navButtonPin, selectButtonPin, redPin, greenPin, bluePin, relayPowerPin, relaySwitchPin);
+
+Relay relayPower(relayPowerPin);
+Relay relaySwitch(relaySwitchPin);
+
+GameLogic gameLogic(navButtonPin, selectButtonPin, relayPower, relaySwitch);
 
 void setup() {
-  pinMode(relayPowerPin, OUTPUT);
-  pinMode(relaySwitchPin, OUTPUT);
-  digitalWrite(relayPowerPin, HIGH);
-  digitalWrite(relaySwitchPin,HIGH);
+
+  relayPower.activate();
+  relaySwitch.activate();
+
+
   Serial.begin(9600);
+  Serial.print("INIT");
   //initialize lcd screen
+  Wire.begin();
   lcd.init();
   // turn on the backlight
   lcd.backlight();
   //Setup Pins
   pinMode(navButtonPin, INPUT);
-  pinMode(redPin,  OUTPUT);              
-  pinMode(greenPin, OUTPUT);
-  pinMode(bluePin, OUTPUT);
 
+  Serial.print("setting text");
   //Set Top Game Text
   setTopText("TASER ROULLETTE ");
   delay(1000);
@@ -74,11 +74,10 @@ void setup() {
 
   //Set the initial bottom text with the first game mode.
   setBottomText(getCurrentGameModeText(gameMode));
-  ledUtils.setColor(0,  255, 0); // Green Color
 }
 
 void loop() {
-
+  relayPower.activate();
   //This condition if true will begin the game based off of the selected gamemode.
   if (isPlaying) {
     //PlayGame
@@ -88,10 +87,11 @@ void loop() {
     delay(250);
     setTopText("  SELECT MODE   ");
     setBottomText(getCurrentGameModeText(gameMode));
-    ledUtils.setColor(0,  255, 0); // Green Color
   }
   else {
     //This condition will begin the game if the button is pressed.
+    Serial.print(digitalRead(selectButtonPin));
+    Serial.print(digitalRead(navButtonPin));
     if (digitalRead(selectButtonPin) == HIGH) {
       //Delays are required using I2C interface otherwise LCD will not update.
       delay(250);
