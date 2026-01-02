@@ -1,7 +1,7 @@
 // lcdUtils.cpp
 #include "LCDUtils.h"
 
-LiquidCrystal_I2C lcd(0x27, 16, 2);
+extern LiquidCrystal_I2C lcd(0x27, 16, 2);
 //Clears top row of the lcd
 void clearTopRow() {
     lcd.setCursor(0, 0);

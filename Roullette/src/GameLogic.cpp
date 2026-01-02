@@ -1,24 +1,18 @@
 #include <Arduino.h>
 #include "GameLogic.h"
 #include "LCDUtils.h"
-#include "LEDUtils.h"
+#include "Relay.h"
 
 // Initialize ledUtils in the constructor initializer list
-GameLogic::GameLogic(int navButtonPin, int selectButtonPin, int redPin, int greenPin, int bluePin, int relayPowerPin, int relaySwitchPin)
+GameLogic::GameLogic(int navButtonPin, int selectButtonPin, Relay &relayPower, Relay &relaySwitch)
     : navButtonPin(navButtonPin),
       selectButtonPin(selectButtonPin),
-      redPin(redPin),
-      greenPin(greenPin),
-      bluePin(bluePin),
-      relayPowerPin(relayPowerPin),
-      relaySwitchPin(relaySwitchPin),
-      isGameActive(false),
-      ledUtils(redPin, greenPin, bluePin) {  // Initialize ledUtils here
+      relayPower(relayPower),
+      relaySwitch(relaySwitch),
+      isGameActive(false) {  // Initialize ledUtils here
 
     pinMode(navButtonPin, INPUT);
     pinMode(selectButtonPin, INPUT);
-    pinMode(relayPowerPin, OUTPUT);
-    pinMode(relaySwitchPin, OUTPUT);
 }
 
 void GameLogic::startGame(GameMode mode) {
@@ -26,9 +20,8 @@ void GameLogic::startGame(GameMode mode) {
     gameMode = mode;
     isGameActive = true;
 
-    // Use the existing ledUtils instance
-    ledUtils.setColor(255, 255, 0); // Sets the LED to yellow
-    digitalWrite(relayPowerPin, LOW);
+    //Relay set to low will turn it on.
+    relayPower.deactivate();
 
     Serial.println("Game Started!");
     Serial.print("Game Mode: ");
@@ -60,11 +53,8 @@ void GameLogic::playRandom(int probability) {
             randomValue = random(0, probability);
             Serial.println(randomValue);
             if (randomValue == 0) {
-                ledUtils.setColor(255, 0, 0); // Sets the LED to red
                 setBottomText("    YOU LOSE    ");
-                digitalWrite(relaySwitchPin, LOW);
-                delay(150);
-                digitalWrite(relaySwitchPin, HIGH);
+                relaySwitch.toggle(500);
                 delay(500);
                 clearBottomRow();
                 return;
@@ -74,6 +64,7 @@ void GameLogic::playRandom(int probability) {
                 clearBottomRow();
             }
         }
+        delay(500);
     }
 }
 
@@ -85,11 +76,8 @@ void GameLogic::playClassic(int probability) {
     while (isGameActive) {
         if (digitalRead(selectButtonPin) == HIGH) {
             if (currentValue == randomValue) {
-                ledUtils.setColor(255, 0, 0); // Sets the LED to red
                 setBottomText("    YOU LOSE    ");
-                digitalWrite(relaySwitchPin, LOW);
-                delay(150);
-                digitalWrite(relaySwitchPin, HIGH);
+                relaySwitch.toggle(500);
                 delay(500);
                 clearBottomRow();
                 return;
@@ -103,4 +91,5 @@ void GameLogic::playClassic(int probability) {
     }
 
     delay(500);
+    
 }
